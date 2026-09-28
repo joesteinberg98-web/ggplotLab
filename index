@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ggplot Lab: learn ggplot2 by building plots</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f5f7f6;--fg:#14211d;--mut:#5b6b66;--card:#fff;--line:#d5dcd9;--acc:#0f766e;--code:#101c19;--codefg:#d7efe8;--ok:#15803d;--bad:#b91c1c;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1614;--fg:#e6f0ed;--mut:#8fa39d;--card:#152220;--line:#28403b;--acc:#2dd4bf;--code:#0a1211;--ok:#4ade80;--bad:#f87171}}
+:root[data-theme="dark"]{--bg:#0e1614;--fg:#e6f0ed;--mut:#8fa39d;--card:#152220;--line:#28403b;--acc:#2dd4bf;--code:#0a1211;--ok:#4ade80;--bad:#f87171}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 'Bricolage Grotesque',system-ui,sans-serif}
+header{padding:28px 20px 8px;max-width:1000px;margin:auto}
+h1{font-size:clamp(2rem,6vw,3.2rem);line-height:1.05;margin:0 0 8px;font-weight:800;letter-spacing:-.02em}
+header p{margin:0;color:var(--mut);max-width:60ch}
+nav{display:flex;gap:6px;overflow-x:auto;padding:16px 20px;max-width:1000px;margin:auto}
+nav button{flex:none;border:1px solid var(--line);background:var(--card);color:var(--fg);padding:8px 14px;border-radius:999px;font:inherit;cursor:pointer}
+nav button[aria-current=true]{background:var(--acc);color:#fff;border-color:var(--acc);font-weight:600}
+:root[data-theme=dark] nav button[aria-current=true]{color:#062;}
+main{max-width:1000px;margin:auto;padding:0 20px 48px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:760px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px}
+h2{margin:0 0 8px;font-size:1.5rem}
+pre{margin:12px 0 0;background:var(--code);color:var(--codefg);padding:14px;border-radius:8px;overflow-x:auto;font:13.5px/1.6 'JetBrains Mono',ui-monospace,monospace}
+.k{color:#5eead4}.s{color:#fcd34d}.c{color:#7c918b}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+label{display:flex;flex-direction:column;font-size:.85rem;color:var(--mut);gap:4px}
+select{font:inherit;padding:7px;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--fg)}
+.ctl{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:14px}
+.quiz{margin-top:18px;border-top:1px dashed var(--line);padding-top:14px}
+.quiz button{display:block;width:100%;text-align:left;margin:6px 0;padding:9px 12px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--fg);font:inherit;cursor:pointer}
+.quiz button.ok{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 15%,transparent)}
+.quiz button.bad{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 15%,transparent)}
+.fb{min-height:1.4em;color:var(--mut);font-size:.9rem}
+svg{width:100%;height:auto;display:block;border-radius:8px}
+.note{color:var(--mut);font-size:.9rem;margin:8px 0 0}
+</style></head><body>
+<header><h1>ggplot Lab</h1><p>Learn ggplot2 the way it is designed: one layer at a time. Read a lesson, change the plot, then check yourself.</p></header>
+<nav id="nav" aria-label="Lessons"></nav>
+<main id="main"></main>
+<script>
+const W=[2.62,2.875,2.32,3.215,3.44,3.46,3.57,3.19,3.15,3.44,3.44,4.07,3.73,3.78,5.25,5.424,5.345,2.2,1.615,1.835,2.465,3.52,3.435,3.84,3.845,1.935,2.14,1.513,3.17,2.77,3.57,2.78];
+const M=[21,21,22.8,21.4,18.7,18.1,14.3,24.4,22.8,19.2,17.8,16.4,17.3,15.2,10.4,10.4,14.7,32.4,30.4,33.9,21.5,15.5,15.2,13.3,19.2,27.3,26,30.4,15.8,19.7,15,21.4];
+const C=[6,6,4,6,8,6,8,4,4,6,6,8,8,8,8,8,8,4,4,4,4,8,8,8,8,4,4,4,8,6,8,4];
+const PAL={4:'#F8766D',6:'#00BA38',8:'#619CFF'};
+const TH={gray:{bg:'#ebebeb',grid:'#fff',axis:'#4d4d4d',border:'none',fn:'theme_gray()'},minimal:{bg:'#ffffff',grid:'#e3e3e3',axis:'#4d4d4d',border:'none',fn:'theme_minimal()'},bw:{bg:'#ffffff',grid:'#ebebeb',axis:'#222',border:'#222',fn:'theme_bw()'}};
+const lin=(a,b,n)=>Array.from({length:n},(_,i)=>a+(b-a)*i/(n-1));
+function draw(o){ // o: geom, color, theme, labels
+ const t=TH[o.theme],w=480,h=320,L=52,R=14,T=30,B=42,pw=w-L-R,ph=h-T-B;let g='',xs,ys,xl,yl,xt,yt;
+ const cats=[4,6,8];
+ if(o.geom==='bar'||o.geom==='box'){xs=v=>L+pw*(cats.indexOf(v)+.5)/3}
+ let pts=[];
+ if(o.geom==='point'||o.geom==='smooth'){
+  const x0=1,x1=6,y0=8,y1=36;xs=v=>L+pw*(v-x0)/(x1-x0);ys=v=>T+ph*(1-(v-y0)/(y1-y0));xt=[1,2,3,4,5,6];yt=[10,20,30];xl='wt';yl='mpg';
+  pts=W.map((x,i)=>[x,M[i],C[i]]);
+ }else if(o.geom==='hist'){
+  const bins=8,lo=10,hi=35,bw=(hi-lo)/bins,cn=Array(bins).fill(0);M.forEach(m=>cn[Math.min(bins-1,Math.floor((m-lo)/bw))]++);
+  const mx=10;xs=v=>L+pw*(v-lo)/(hi-lo);ys=v=>T+ph*(1-v/mx);xt=[10,15,20,25,30,35];yt=[0,5,10];xl='mpg';yl='count';
+  g+=cn.map((c,i)=>`<rect x="${xs(lo+i*bw)}" y="${ys(c)}" width="${pw/bins-1}" height="${ph*c/mx}" fill="#595959"/>`).join('');
+ }else if(o.geom==='bar'){
+  const cn=cats.map(c=>C.filter(x=>x===c).length),mx=16;ys=v=>T+ph*(1-v/mx);yt=[0,5,10,15];xl='cyl';yl='count';
+  g+=cats.map((c,i)=>`<rect x="${xs(c)-pw/8}" y="${ys(cn[i])}" width="${pw/4}" height="${ph*cn[i]/mx}" fill="${o.color?PAL[c]:'#595959'}"/>`).join('');
+ }else{
+  const y0=8,y1=36;ys=v=>T+ph*(1-(v-y0)/(y1-y0));yt=[10,20,30];xl='factor(cyl)';yl='mpg';
+  cats.forEach(c=>{const v=M.filter((_,i)=>C[i]===c).sort((a,b)=>a-b),q=p=>{const k=(v.length-1)*p,f=Math.floor(k);return v[f]+(v[Math.min(f+1,v.length-1)]-v[f])*(k-f)};
+   const x=xs(c),bw=pw/6,col=o.color?PAL[c]:'#fff';
+   g+=`<line x1="${x}" x2="${x}" y1="${ys(v[0])}" y2="${ys(v[v.length-1])}" stroke="#333"/><rect x="${x-bw/2}" y="${ys(q(.75))}" width="${bw}" height="${ys(q(.25))-ys(q(.75))}" fill="${col}" stroke="#333"/><line x1="${x-bw/2}" x2="${x+bw/2}" y1="${ys(q(.5))}" y2="${ys(q(.5))}" stroke="#333" stroke-width="3"/>`});
+ }
+ let s=`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Preview of the ggplot"><rect width="${w}" height="${h}" fill="#fff"/><rect x="${L}" y="${T}" width="${pw}" height="${ph}" fill="${t.bg}" ${t.border!=='none'?`stroke="${t.border}"`:''}/>`;
+ (yt||[]).forEach(v=>s+=`<line x1="${L}" x2="${L+pw}" y1="${ys(v)}" y2="${ys(v)}" stroke="${t.grid}"/><text x="${L-6}" y="${ys(v)+4}" text-anchor="end" font-size="11" fill="${t.axis}">${v}</text>`);
+ if(xt)xt.forEach(v=>s+=`<line y1="${T}" y2="${T+ph}" x1="${xs(v)}" x2="${xs(v)}" stroke="${t.grid}"/><text x="${xs(v)}" y="${T+ph+15}" text-anchor="middle" font-size="11" fill="${t.axis}">${v}</text>`);
+ else cats.forEach(c=>s+=`<text x="${xs(c)}" y="${T+ph+15}" text-anchor="middle" font-size="11" fill="${t.axis}">${c}</text>`);
+ s+=g;
+ if(pts.length){pts.forEach(p=>s+=`<circle cx="${xs(p[0])}" cy="${ys(p[1])}" r="3.6" fill="${o.color?PAL[p[2]]:'#333'}"/>`);
+  if(o.geom==='smooth'){const n=W.length,mx=W.reduce((a,b)=>a+b)/n,my=M.reduce((a,b)=>a+b)/n;let sxy=0,sxx=0;W.forEach((x,i)=>{sxy+=(x-mx)*(M[i]-my);sxx+=(x-mx)**2});const b=sxy/sxx,a=my-b*mx;
+   s+=`<line x1="${xs(1.4)}" y1="${ys(a+b*1.4)}" x2="${xs(5.5)}" y2="${ys(a+b*5.5)}" stroke="#3366FF" stroke-width="2.5"/>`}}
+ s+=`<text x="${L+pw/2}" y="${h-6}" text-anchor="middle" font-size="12" fill="#222">${o.labels?'Weight (1000 lbs)':xl}</text><text transform="translate(13 ${T+ph/2}) rotate(-90)" text-anchor="middle" font-size="12" fill="#222">${o.labels&&yl==='mpg'?'Miles per gallon':yl}</text>`;
+ if(o.labels)s+=`<text x="${L}" y="19" font-size="14" font-weight="700" fill="#111">Heavier cars use more fuel</text>`;
+ return s+'</svg>';
+}
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const hl=s=>esc(s).replace(/(#.*$)/gm,'<span class="c">$1</span>').replace(/("[^"]*")/g,'<span class="s">$1</span>').replace(/\b(ggplot|aes|geom_\w+|theme_\w+|labs|facet_wrap|scale_\w+|library)\b/g,'<span class="k">$1</span>');
+const LESSONS=[
+{t:'1. Layers',b:'Every ggplot starts with data, then maps columns to visual properties with <code>aes()</code>, then adds a geometry. You stack pieces together with <code>+</code>.',
+ code:'library(ggplot2)\n\nggplot(mtcars, aes(x = wt, y = mpg)) +  # data + mapping\n  geom_point()                          # geometry',
+ opts:{geom:'point',color:false,theme:'gray',labels:false},
+ q:['What does the + do in a ggplot call?',['Adds a layer or setting to the plot','Adds two columns together','Runs the code twice'],0]},
+{t:'2. Aesthetics',b:'Put a column inside <code>aes()</code> and ggplot scales it for you: color, fill, size, shape. Put a fixed value outside <code>aes()</code> to style every point the same.',
+ code:'# mapped: color follows the data\nggplot(mtcars, aes(wt, mpg, color = factor(cyl))) +\n  geom_point()\n\n# set: every point is steelblue\nggplot(mtcars, aes(wt, mpg)) +\n  geom_point(color = "steelblue")',
+ opts:{geom:'point',color:true,theme:'gray',labels:false},
+ q:['You want points colored by cylinder count. Where does color go?',['Inside aes()','Outside aes(), in geom_point()','In theme()'],0]},
+{t:'3. Geoms',b:'The geom decides the shape of the chart. Same data, different question: <code>geom_point</code> for relationships, <code>geom_histogram</code> for one distribution, <code>geom_bar</code> for counts, <code>geom_boxplot</code> for groups, <code>geom_smooth</code> for trends.',
+ code:'ggplot(mtcars, aes(mpg)) +\n  geom_histogram(bins = 8)\n\nggplot(mtcars, aes(factor(cyl), mpg)) +\n  geom_boxplot()\n\nggplot(mtcars, aes(wt, mpg)) +\n  geom_point() +\n  geom_smooth(method = "lm")',
+ opts:{geom:'hist',color:false,theme:'gray',labels:false},pick:true,
+ q:['Which geom shows how one numeric variable is distributed?',['geom_histogram()','geom_line()','geom_text()'],0]},
+{t:'4. Facets',b:'<code>facet_wrap()</code> splits one plot into small multiples, one panel per group. It is often clearer than piling many colors on a single panel.',
+ code:'ggplot(mtcars, aes(wt, mpg)) +\n  geom_point() +\n  facet_wrap(~ cyl)         # one panel per cyl\n\n# free the axes if scales differ\nfacet_wrap(~ cyl, scales = "free_y")',
+ opts:null,facet:true,
+ q:['What does facet_wrap(~ cyl) do?',['Draws one panel per cyl value','Colors points by cyl','Sorts the data by cyl'],0]},
+{t:'5. Themes and labels',b:'Polish comes last. <code>labs()</code> names things for the reader, and a <code>theme_*()</code> changes the whole look in one line.',
+ code:'ggplot(mtcars, aes(wt, mpg)) +\n  geom_point() +\n  labs(title = "Heavier cars use more fuel",\n       x = "Weight (1000 lbs)",\n       y = "Miles per gallon") +\n  theme_minimal()',
+ opts:{geom:'point',color:false,theme:'minimal',labels:true},pick:true,themepick:true,
+ q:['Which function sets the title and axis names?',['labs()','theme()','aes()'],0]}
+];
+const BUILD={t:'Build your own'};
+let cur=0,st={};
+const nav=document.getElementById('nav'),main=document.getElementById('main');
+[...LESSONS,BUILD].forEach((l,i)=>{const b=document.createElement('button');b.textContent=l.t;b.onclick=()=>show(i);nav.appendChild(b)});
+function facetSVG(){let s='<svg viewBox="0 0 480 240" role="img" aria-label="Three scatter panels split by cylinders"><rect width="480" height="240" fill="#fff"/>';
+ [4,6,8].forEach((c,k)=>{const x0=10+k*156,y0=26,pw=142,ph=170;s+=`<rect x="${x0}" y="${y0-16}" width="${pw}" height="16" fill="#d9d9d9"/><text x="${x0+pw/2}" y="${y0-4}" text-anchor="middle" font-size="11">${c}</text><rect x="${x0}" y="${y0}" width="${pw}" height="${ph}" fill="#ebebeb"/>`;
+  W.forEach((x,i)=>{if(C[i]===c)s+=`<circle cx="${x0+pw*(x-1)/5}" cy="${y0+ph*(1-(M[i]-8)/28)}" r="3.4" fill="#333"/>`});});
+ return s+'<text x="240" y="232" text-anchor="middle" font-size="12">wt</text></svg>'}
+function show(i){cur=i;[...nav.children].forEach((b,j)=>b.setAttribute('aria-current',j===i));
+ if(i===LESSONS.length)return build();
+ const l=LESSONS[i];st=Object.assign({},l.opts||{});
+ main.innerHTML=`<div class="grid"><div class="card"><h2>${l.t.slice(3)}</h2><p>${l.b}</p><pre>${hl(l.code)}</pre>
+ <div class="quiz"><strong>${l.q[0]}</strong><div id="qa"></div><div class="fb" id="fb" aria-live="polite"></div></div></div>
+ <div class="card"><div id="ctl"></div><div id="plot"></div><p class="note">${l.opts?'Preview drawn from the built-in mtcars data.':'Each panel shows the same data for one group.'}</p></div></div>`;
+ const qa=document.getElementById('qa');
+ l.q[1].forEach((o,k)=>{const b=document.createElement('button');b.textContent=o;b.onclick=()=>{[...qa.children].forEach(x=>x.className='');b.className=k===l.q[2]?'ok':'bad';document.getElementById('fb').textContent=k===l.q[2]?'Correct.':'Not quite. Try another answer.'};qa.appendChild(b)});
+ const ctl=document.getElementById('ctl');
+ if(l.pick){ctl.className='ctl';ctl.innerHTML=(i===2?sel('geom','Geom',{point:'point',smooth:'point + smooth',hist:'histogram',bar:'bar',box:'boxplot'}):'')+(l.themepick?sel('theme','Theme',{gray:'theme_gray',minimal:'theme_minimal',bw:'theme_bw'})+sel('labels','Labels',{'false':'none','true':'with labs()'}):'');
+  ctl.querySelectorAll('select').forEach(e=>e.onchange=()=>{const v=e.value;st[e.id]=v==='true'?true:v==='false'?false:v;plot()})}
+ plot();}
+function sel(id,lab,o){return `<label>${lab}<select id="${id}">${Object.entries(o).map(([k,v])=>`<option value="${k}" ${String(st[id])===k?'selected':''}>${v}</option>`).join('')}</select></label>`}
+function plot(){document.getElementById('plot').innerHTML=LESSONS[cur].facet?facetSVG():draw(st)}
+function build(){st={geom:'point',color:false,theme:'gray',labels:false};
+ main.innerHTML=`<div class="card"><h2>Build your own</h2><p>Change an option and watch the code gain a layer. Copy it into RStudio to run it for real.</p>
+ <div class="ctl">${sel('geom','Geom',{point:'geom_point',smooth:'point + smooth',hist:'geom_histogram',bar:'geom_bar',box:'geom_boxplot'})}${sel('color','Color by cyl',{'false':'no','true':'yes'})}${sel('theme','Theme',{gray:'theme_gray',minimal:'theme_minimal',bw:'theme_bw'})}${sel('labels','Labels',{'false':'default','true':'custom labs()'})}</div>
+ <div class="grid"><div id="plot"></div><pre id="code"></pre></div></div>`;
+ main.querySelectorAll('select').forEach(e=>e.onchange=()=>{const v=e.value;st[e.id]=v==='true'?true:v==='false'?false:v;upd()});upd()}
+function upd(){const g=st.geom,cy=st.color?'factor(cyl)':null;let aes,geo;
+ const cl=cy?', color = '+cy:'', fl=cy?', fill = '+cy:'';
+ if(g==='point'||g==='smooth'){aes='wt, mpg'+cl;geo='geom_point()'+(g==='smooth'?' +\n  geom_smooth(method = "lm")':'')}
+ else if(g==='hist'){aes='mpg';geo='geom_histogram(bins = 8)'}
+ else if(g==='bar'){aes='factor(cyl)'+(cy?', fill = factor(cyl)':'');geo='geom_bar()'}
+ else{aes='factor(cyl), mpg'+fl;geo='geom_boxplot()'}
+ let c='ggplot(mtcars, aes('+aes+')) +\n  '+geo;
+ if(st.labels)c+=' +\n  labs(title = "Heavier cars use more fuel",\n       x = "Weight (1000 lbs)",\n       y = "Miles per gallon")';
+ c+=' +\n  '+TH[st.theme].fn;
+ document.getElementById('code').innerHTML=hl(c);document.getElementById('plot').innerHTML=draw(st)}
+show(0);
+</script></body></html>
